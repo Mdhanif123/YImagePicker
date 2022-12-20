@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -196,17 +197,31 @@ public abstract class PBaseLoaderFragment extends Fragment implements ICameraExe
         if (getActivity() == null) {
             return;
         }
-        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_STORAGE);
+        if (Build.VERSION.SDK_INT >= 33) {
+            if ((ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.READ_MEDIA_IMAGES)
+                    != PackageManager.PERMISSION_GRANTED)) {
+                requestPermissions(new String[]{Manifest.permission.READ_MEDIA_IMAGES}, REQ_STORAGE);
+            } else {
+                ImagePicker.provideMediaSets(getActivity(), getSelectConfig().getMimeTypes(), new MediaSetsDataSource.MediaSetProvider() {
+                    @Override
+                    public void providerMediaSets(ArrayList<ImageSet> imageSets) {
+                        loadMediaSetsComplete(imageSets);
+                    }
+                });
+            }
         } else {
-            //从媒体库拿到文件夹列表
-            ImagePicker.provideMediaSets(getActivity(), getSelectConfig().getMimeTypes(), new MediaSetsDataSource.MediaSetProvider() {
-                @Override
-                public void providerMediaSets(ArrayList<ImageSet> imageSets) {
-                    loadMediaSetsComplete(imageSets);
-                }
-            });
+            if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_STORAGE);
+            } else {
+                //从媒体库拿到文件夹列表
+                ImagePicker.provideMediaSets(getActivity(), getSelectConfig().getMimeTypes(), new MediaSetsDataSource.MediaSetProvider() {
+                    @Override
+                    public void providerMediaSets(ArrayList<ImageSet> imageSets) {
+                        loadMediaSetsComplete(imageSets);
+                    }
+                });
+            }
         }
     }
 
